@@ -1,6 +1,8 @@
 #include "ofApp.h"
 
 #define RAIN_DENSITY 100
+#define DEFAULT_THRESHOLD_NEAR 230
+#define DEFAULT_THRESHOLD_FAR  50
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -8,19 +10,31 @@ void ofApp::setup(){
    ofSetFrameRate(30);
    ofBackground(100, 100, 100);
 
-   // enable depth->video image calibration
-   kinect.setRegistration(true);
+   pnlConfig.setup();
+   barThresholdNear.addListener(this, &ofApp::thresholdNearChanged);
+   barThresholdFar.addListener(this, &ofApp::thresholdFarChanged);
+   pnlConfig.add(barThresholdNear.setup("Near: ",
+                                        DEFAULT_THRESHOLD_NEAR,
+                                        0, 255));
+   pnlConfig.add(barThresholdFar.setup("Far: ",
+                                       DEFAULT_THRESHOLD_FAR,
+                                       0, 255));
+   bShowConfig = false;
 
+   kinect.setRegistration(true);
    kinect.init();
    kinect.open();
 
    colorImage.allocate(kinect.width, kinect.height);
-   grayImage.allocate(kinect.width, kinect.height);
-   grayImageBg.allocate(kinect.width, kinect.height);
-   grayImageFg.allocate(kinect.width, kinect.height);
+   depthImage.allocate(kinect.width, kinect.height);
+   depthImageBg.allocate(kinect.width, kinect.height);
+   depthImageFg.allocate(kinect.width, kinect.height);
+   depthImageFgNear.allocate(kinect.width, kinect.height);
+   depthImageFgFar.allocate(kinect.width, kinect.height);
 
    bLearnBackground = true;
-   thresholdValue = 50; //70
+   thresholdNear = DEFAULT_THRESHOLD_NEAR;
+   thresholdFar = DEFAULT_THRESHOLD_FAR;
 
    kinect.setCameraTiltAngle(15);
 
@@ -40,19 +54,28 @@ void ofApp::update(){
    if(kinect.isFrameNew()) {
 
       colorImage.setFromPixels(kinect.getPixels());
-      //grayImage.setFromPixels(kinect.getDepthPixels());
-      grayImage = colorImage;
-      grayImage.blurGaussian();
+      depthImage.setFromPixels(kinect.getDepthPixels());
 
       if(bLearnBackground) {
-         grayImageBg = grayImage;
+         depthImageBg = depthImage;
          bLearnBackground = false;
       }
 
-      grayImageFg.absDiff(grayImageBg, grayImage);
-      grayImageFg.threshold(thresholdValue);
+      depthImageFg.absDiff(depthImageBg, depthImage);
+      depthImageFgNear = depthImageFg;
+      depthImageFgFar = depthImageFg;
+      depthImageFgNear.threshold(thresholdNear, true);
+      depthImageFgFar.threshold(thresholdFar);
+      cvAnd(depthImageFgNear.getCvImage(),
+            depthImageFgFar.getCvImage(),
+            depthImageFg.getCvImage(), NULL);
 
-      //contourFinder.findContours(grayImageFg, 10, (kinect.width*kinect.height)/3, 20, false);
+      //depthImage = colorImage;
+      //depthImage.blurGaussian();
+      //depthImageFg.absDiff(depthImageBg, depthImage);
+      //depthImageFg.threshold(thresholdValue);
+
+      contourFinder.findContours(depthImageFg, 10, (kinect.width*kinect.height)/3, 20, false);
 
       for (int i = 0; i< RAIN_DENSITY; i++) {
 
@@ -60,7 +83,7 @@ void ofApp::update(){
          int smH = rain[i].y / ofGetHeight() * kinect.height;
          int p = (smW + smH*kinect.width);
 
-         if (grayImageFg.getPixels()[p] < 127) {
+         if (depthImageFg.getPixels()[p] < 127) {
             velocities[i] += 0.3;
             rain[i].y += velocities[i];
             if (rain[i].y > ofGetHeight()) {
@@ -70,13 +93,13 @@ void ofApp::update(){
                 velocities[i] = ofRandom(1, 10);
             }
          } else {
-            /*int pAbove = (smW + (smH-1)*kinect.width);
-            if (grayImageFg.getPixels()[pAbove] > 127) {
-               rain[i].y -= 1;
+            int pAbove = (smW + (smH-velocities[i])*kinect.width);
+            if (depthImageFg.getPixels()[pAbove] > 127) {
+               rain[i].y -= velocities[i];
                if (rain[i].y < 0) {
                   rain[i].y = 0;
                }
-            }*/
+            }
          }
       }
    }
@@ -85,7 +108,9 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
 
-   //grayImageFg.draw(10, 10, ofGetWidth(), ofGetHeight());
+   ofSetHexColor(0xffffff);
+
+   //depthImageFg.draw(10, 10, ofGetWidth(), ofGetHeight());
 
 
    //kinect.drawDepth(10, 10, 400, 300);
@@ -95,15 +120,15 @@ void ofApp::draw(){
 	//colorImage.draw (10,  10,  400, 300);
 
    // Top-Right
-	//grayImage.draw  (420, 10,  400, 300);
+	//depthImage.draw  (420, 10,  400, 300);
 
    // Bottom-Left
-	//grayImageBg.draw(10 , 320, 400, 300);
-   //grayImageFg.draw(10 , 320, 400, 300);
+	//depthImageBg.draw(10 , 320, 400, 300);
+   //depthImageFg.draw(10 , 320, 400, 300);
 
    // Bottom-Right
    //contourFinder.draw(420, 320, 400, 300);
-	//grayImageFg.draw(420, 320, 400, 300);
+	//depthImageFg.draw(420, 320, 400, 300);
    /*ofNoFill();
 	ofDrawRectangle(420,320,400,300);
 	int numBlobs = contourFinder.nBlobs;
@@ -111,20 +136,35 @@ void ofApp::draw(){
 		contourFinder.blobs[i].draw(420, 320);
 	}*/
 
-   ofSetHexColor(0xffffff);
-   colorImage.draw(0, 0, ofGetWidth(), ofGetHeight());
+   depthImageFg.draw(0, 0, ofGetWidth(), ofGetHeight());
+   contourFinder.draw(0, 0, ofGetWidth(), ofGetHeight());
+
+   /*ofScale((ofGetWidth() / kinect.width), (ofGetHeight() / kinect.height), 1);
+   ofSetColor(255,0,0); // red
+   for (int i = 0; i < contourFinder.nBlobs; i++){
+      ofxCvBlob& blob = contourFinder.blobs[i];
+      blob.draw(0, 0);
+   }
+   ofSetColor(255,255,255); // reset to white
+   ofScale(1,1,1);*/
 
    for (int i = 0; i< RAIN_DENSITY; i++) {
-      ofNoFill();
+      //ofNoFill();
+      //ofSetHexColor(0xffffff);
+      //ofDrawCircle(rain[i], 5);
+      //ofSetHexColor(0xff0000);
       ofSetHexColor(0xffffff);
-      ofDrawCircle(rain[i], 5);
-      ofSetHexColor(0xff0000);
       ofDrawBitmapString(text[i], rain[i]);
     }
 
 	stringstream reportStream;
    reportStream << "(" << ofGetMouseX() << ", " << ofGetMouseY() << "): " << endl;
    ofDrawBitmapString(reportStream.str(), 10, 10);
+
+   if(bShowConfig) {
+      pnlConfig.draw();
+   }
+
 }
 
 void ofApp::exit() {
@@ -138,9 +178,21 @@ void ofApp::keyPressed(int key){
       case ' ':
          bLearnBackground = true;
          break;
+      case 'c':
+         bShowConfig = !bShowConfig;
+         break;
    }
 }
 
+void ofApp::thresholdNearChanged(int &newThresholdNear) {
+   thresholdNear = newThresholdNear;
+}
+
+void ofApp::thresholdFarChanged(int &newThresholdFar) {
+   thresholdFar = newThresholdFar;
+}
+
+/*
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
 
@@ -190,3 +242,4 @@ void ofApp::gotMessage(ofMessage msg){
 void ofApp::dragEvent(ofDragInfo dragInfo){
 
 }
+*/
