@@ -2,8 +2,10 @@
 
 #include "ofMain.h"
 #include "ofxGui.h"
-#include "ofxOpenCv.h"
-#include "ofxKinect.h"
+#include "Vision.h"
+//#include "ofxOpenCv.h"
+//#include "ofxKinect.h"
+//#include "ofxBox2d.h"
 
 #define CANVAS_WIDTH 1024
 #define CANVAS_HEIGHT 768
@@ -30,8 +32,11 @@ class ofApp : public ofBaseApp{
       //void dragEvent(ofDragInfo dragInfo);
       //void gotMessage(ofMessage msg);
 
-      ofxKinect kinect;
+      Vision vision;
+      /*ofxKinect kinect;
       ofxCvColorImage     colorImage;
+      ofxCvGrayscaleImage grayImage;
+      ofxCvGrayscaleImage grayImageFg;
       ofxCvGrayscaleImage depthImage;
       ofxCvGrayscaleImage depthImageBg;
       ofxCvGrayscaleImage depthImageFg;
@@ -39,18 +44,21 @@ class ofApp : public ofBaseApp{
       ofxCvGrayscaleImage depthImageFgFar;
       ofxCvContourFinder  contourFinder;
 
+      bool bLearnBackground;
       int  thresholdNear;
-      int  thresholdFar;
+      int  thresholdFar;*/
 
       ofxPanel     pnlConfig;
       ofxIntSlider barThresholdNear;
       ofxIntSlider barThresholdFar;
 
       bool bShowConfig;
-      bool bLearnBackground;
 
       vector<ofPoint> rain;
       vector<char> text;
       vector<float> velocities;
+
+//      ofxBox2d box2d;
+//      vector<shared_ptr<ofxBox2dRect>> boxes;
 };
 

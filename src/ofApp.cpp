@@ -1,8 +1,8 @@
 #include "ofApp.h"
 
 #define RAIN_DENSITY 100
-#define DEFAULT_THRESHOLD_NEAR 230
-#define DEFAULT_THRESHOLD_FAR  50
+//#define DEFAULT_THRESHOLD_NEAR 230
+//#define DEFAULT_THRESHOLD_FAR  50
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -14,18 +14,27 @@ void ofApp::setup(){
    barThresholdNear.addListener(this, &ofApp::thresholdNearChanged);
    barThresholdFar.addListener(this, &ofApp::thresholdFarChanged);
    pnlConfig.add(barThresholdNear.setup("Near: ",
-                                        DEFAULT_THRESHOLD_NEAR,
+                                       230,
                                         0, 255));
    pnlConfig.add(barThresholdFar.setup("Far: ",
-                                       DEFAULT_THRESHOLD_FAR,
+                                      50,
                                        0, 255));
    bShowConfig = false;
 
-   kinect.setRegistration(true);
+   vision.setup();
+
+   //box2d.init();
+   //box2d.setGravity(0, 10);
+   //box2d.createGround();
+   //box2d.setFPS(30.0);
+
+   /*kinect.setRegistration(true);
    kinect.init();
    kinect.open();
 
    colorImage.allocate(kinect.width, kinect.height);
+   grayImage.allocate(kinect.width, kinect.height);
+   grayImageFg.allocate(kinect.width, kinect.height);
    depthImage.allocate(kinect.width, kinect.height);
    depthImageBg.allocate(kinect.width, kinect.height);
    depthImageFg.allocate(kinect.width, kinect.height);
@@ -36,7 +45,7 @@ void ofApp::setup(){
    thresholdNear = DEFAULT_THRESHOLD_NEAR;
    thresholdFar = DEFAULT_THRESHOLD_FAR;
 
-   kinect.setCameraTiltAngle(15);
+   kinect.setCameraTiltAngle(15);*/
 
    for (int i = 0; i < RAIN_DENSITY; i++) {
       ofPoint point = ofPoint(ofRandom(ofGetWidth()), ofRandom(ofGetHeight()));
@@ -49,12 +58,15 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::update(){
 
-   kinect.update();
+   //box2d.update();
+
+   /*kinect.update();
 
    if(kinect.isFrameNew()) {
 
       colorImage.setFromPixels(kinect.getPixels());
       depthImage.setFromPixels(kinect.getDepthPixels());
+      grayImage = colorImage;
 
       if(bLearnBackground) {
          depthImageBg = depthImage;
@@ -62,22 +74,19 @@ void ofApp::update(){
       }
 
       depthImageFg.absDiff(depthImageBg, depthImage);
-      depthImageFgNear = depthImageFg;
-      depthImageFgFar = depthImageFg;
-      depthImageFgNear.threshold(thresholdNear, true);
-      depthImageFgFar.threshold(thresholdFar);
-      cvAnd(depthImageFgNear.getCvImage(),
-            depthImageFgFar.getCvImage(),
-            depthImageFg.getCvImage(), NULL);
+      ofPixels &pix = depthImageFg.getPixels();
+      int numPixels = pix.size();
+      for(int i = 0; i < numPixels; i++) {
+         if(pix[i] < thresholdNear && pix[i] > thresholdFar) {
+            pix[i] = 255;
+         } else {
+            pix[i] = 0;
+         }
+      }
 
-      //depthImage = colorImage;
-      //depthImage.blurGaussian();
-      //depthImageFg.absDiff(depthImageBg, depthImage);
-      //depthImageFg.threshold(thresholdValue);
+      contourFinder.findContours(depthImageFg, 50, (kinect.width*kinect.height)/3, 20, false);*/
 
-      contourFinder.findContours(depthImageFg, 10, (kinect.width*kinect.height)/3, 20, false);
-
-      for (int i = 0; i< RAIN_DENSITY; i++) {
+      /*for (int i = 0; i< RAIN_DENSITY; i++) {
 
          int smW = rain[i].x / ofGetWidth() * kinect.width;
          int smH = rain[i].y / ofGetHeight() * kinect.height;
@@ -102,7 +111,10 @@ void ofApp::update(){
             }
          }
       }
-   }
+   }*/
+   vision.update();
+
+   //ofRemove(boxes, ofxBox2dBaseShape::shouldRemoveOffScreen);
 }
 
 //--------------------------------------------------------------
@@ -136,8 +148,8 @@ void ofApp::draw(){
 		contourFinder.blobs[i].draw(420, 320);
 	}*/
 
-   depthImageFg.draw(0, 0, ofGetWidth(), ofGetHeight());
-   contourFinder.draw(0, 0, ofGetWidth(), ofGetHeight());
+   //grayImage.draw(0, 0, ofGetWidth(), ofGetHeight());
+   //contourFinder.draw(0, 0, ofGetWidth(), ofGetHeight());
 
    /*ofScale((ofGetWidth() / kinect.width), (ofGetHeight() / kinect.height), 1);
    ofSetColor(255,0,0); // red
@@ -147,6 +159,15 @@ void ofApp::draw(){
    }
    ofSetColor(255,255,255); // reset to white
    ofScale(1,1,1);*/
+
+    //for(auto &box : boxes) {
+    //     ofFill();
+    //     ofSetHexColor(0xe63b8b);
+    //     box->draw();
+    //  }
+    //
+    vision.draw(ofGetWidth(), ofGetHeight());
+
 
    for (int i = 0; i< RAIN_DENSITY; i++) {
       //ofNoFill();
@@ -168,28 +189,40 @@ void ofApp::draw(){
 }
 
 void ofApp::exit() {
+   vision.exit();
    //kinect.setCameraTiltAngle(0);
-   kinect.close();
+   //kinect.close();
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
    switch (key) {
       case ' ':
-         bLearnBackground = true;
+         vision.learnBackground();
+         //bLearnBackground = true;
          break;
       case 'c':
          bShowConfig = !bShowConfig;
          break;
+      /*case 'b':
+         float w = ofRandom(4, 20);
+		   float h = ofRandom(4, 20);
+         auto box = make_shared<ofxBox2dRect>();
+		   box->setPhysics(3.0, 0.53, 0.1);
+		   box->setup(box2d.getWorld(), mouseX, mouseY, w, h);
+         boxes.push_back(box);
+         break;*/
    }
 }
 
 void ofApp::thresholdNearChanged(int &newThresholdNear) {
-   thresholdNear = newThresholdNear;
+   vision.setDepthThresholdNear(newThresholdNear);
+   //thresholdNear = newThresholdNear;
 }
 
 void ofApp::thresholdFarChanged(int &newThresholdFar) {
-   thresholdFar = newThresholdFar;
+   vision.setDepthThresholdFar(newThresholdFar);
+   //thresholdFar = newThresholdFar;
 }
 
 /*
