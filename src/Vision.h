@@ -1,8 +1,8 @@
 #ifndef VISION_H
 #define VISION_H
 
-#include "ofxOpenCv.h"
 #include "ofxKinect.h"
+#include "Blob.h"
 
 class Vision {
 
@@ -20,13 +20,10 @@ class Vision {
 
    private:
       ofxKinect kinect;
-      ofxCvColorImage     colorImage;
-      ofxCvGrayscaleImage grayImage;
-      ofxCvGrayscaleImage grayImageFg;
-      ofxCvGrayscaleImage depthImage;
-      ofxCvGrayscaleImage depthImageBg;
-      ofxCvGrayscaleImage depthImageFg;
-      ofxCvContourFinder  contourFinder;
+      ofImage   source;
+      ofImage   background;
+
+      vector<Blob> blobs;
 
       int  thresholdNear;
       int  thresholdFar;

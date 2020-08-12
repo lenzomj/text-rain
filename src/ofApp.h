@@ -5,7 +5,7 @@
 #include "Vision.h"
 //#include "ofxOpenCv.h"
 //#include "ofxKinect.h"
-//#include "ofxBox2d.h"
+#include "ofxBox2d.h"
 
 #define CANVAS_WIDTH 1024
 #define CANVAS_HEIGHT 768

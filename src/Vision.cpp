@@ -1,17 +1,14 @@
 #include "Vision.h"
+#include "Blob.h"
+#include "ofxOpenCv.h"
 
 #define DEFAULT_THRESHOLD_NEAR 230
 #define DEFAULT_THRESHOLD_FAR  50
 
 Vision::Vision() :
    kinect(),
-   colorImage(),
-   grayImage(),
-   grayImageFg(),
-   depthImage(),
-   depthImageBg(),
-   depthImageFg(),
-   contourFinder(),
+   source(),
+   background(),
    thresholdNear(DEFAULT_THRESHOLD_NEAR),
    thresholdFar(DEFAULT_THRESHOLD_FAR),
    bLearnBackground(false) { }
@@ -21,33 +18,41 @@ void Vision::setup() {
    kinect.init();
    kinect.open();
 
-   colorImage.allocate(kinect.width, kinect.height);
-   grayImage.allocate(kinect.width, kinect.height);
-   grayImageFg.allocate(kinect.width, kinect.height);
-   depthImage.allocate(kinect.width, kinect.height);
-   depthImageBg.allocate(kinect.width, kinect.height);
-   depthImageFg.allocate(kinect.width, kinect.height);
+   source.allocate(kinect.width, kinect.height, OF_IMAGE_COLOR);
+   background.allocate(kinect.width, kinect.height, OF_IMAGE_GRAYSCALE);
 
    kinect.setCameraTiltAngle(15);
 }
 
 void Vision::update() {
+
+   ofxCvGrayscaleImage depthField;
+   ofxCvGrayscaleImage depthFieldBg;
+   ofxCvGrayscaleImage depthFieldFg;
+
+   depthField.allocate(kinect.width, kinect.height);
+   depthFieldBg.allocate(kinect.width, kinect.height);
+   depthFieldFg.allocate(kinect.width, kinect.height);
+
+   ofxCvContourFinder  contourFinder;
+
    kinect.update();
 
    if(kinect.isFrameNew()) {
 
-      colorImage.setFromPixels(kinect.getPixels());
-      grayImage = colorImage;
+      blobs.clear();
 
-      depthImage.setFromPixels(kinect.getDepthPixels());
+      source.setFromPixels(kinect.getPixels());
+      depthField.setFromPixels(kinect.getDepthPixels());
 
+      depthFieldBg.setFromPixels(background.getPixels());
       if(bLearnBackground) {
-         depthImageBg = depthImage;
+         background.setFromPixels(depthField.getPixels());
          bLearnBackground = false;
       }
 
-      depthImageFg.absDiff(depthImageBg, depthImage);
-      ofPixels &pix = depthImageFg.getPixels();
+      depthFieldFg.absDiff(depthFieldBg, depthField);
+      ofPixels &pix = depthFieldFg.getPixels();
       int numPixels = pix.size();
       for(int i = 0; i < numPixels; i++) {
          if(pix[i] < thresholdNear && pix[i] > thresholdFar) {
@@ -57,14 +62,26 @@ void Vision::update() {
          }
       }
 
-      contourFinder.findContours(depthImageFg, 50, (kinect.width*kinect.height)/3, 20, false);
+      contourFinder.findContours(depthFieldFg, 50, (kinect.width*kinect.height)/3, 20, false);
+      for(auto &blob : contourFinder.blobs) {
+         Blob newBlob;
+         newBlob.area = blob.area;
+         newBlob.length = blob.length;
+         newBlob.boundingRect = blob.boundingRect;
+         newBlob.centroid = blob.centroid;
+         newBlob.hole = blob.hole;
+         newBlob.pts = blob.pts;
+         newBlob.nPts = blob.nPts;
+         blobs.push_back(newBlob);
+      }
    }
-
 }
 
 void Vision::draw(int width, int height) {
-   grayImage.draw(0, 0, ofGetWidth(), ofGetHeight());
-   contourFinder.draw(0, 0, ofGetWidth(), ofGetHeight());
+   source.draw(0, 0, ofGetWidth(), ofGetHeight());
+   for (auto & blob : blobs) {
+      blob.draw(0, 0);
+   }
 }
 
 void Vision::exit() {
