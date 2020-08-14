@@ -1,24 +1,23 @@
 #include "Blob.h"
 
-Blob::Blob() :
-   area(0.0f),
-   length(0.0f),
-   boundingRect(),
-   centroid(),
-   hole(false),
-   pts(),
-   nPts(0) { }
+Blob::Blob(std::vector<ofDefaultVec3> &pts) {
+   for (auto &p : pts) {
+      contour.addVertex(p);
+   }
+   contour.close();
+}
 
-void Blob::draw(float x = 0.0f, float y = 0.0f) {
+void Blob::draw() {
    ofPushStyle();
    ofNoFill();
    ofSetHexColor(0x00FFFF);
    ofBeginShape();
-   for (int i = 0; i < nPts; i++){
-      ofVertex(x + pts[i].x, y + pts[i].y);
+   for (auto &p : contour.getVertices()) {
+      ofVertex(p.x, p.y);
    }
    ofEndShape(true);
    ofSetHexColor(0xff0099);
-   ofDrawRectangle(x + boundingRect.x, y + boundingRect.y, boundingRect.width, boundingRect.height);
+   ofRectangle boundingRect = contour.getBoundingBox();
+   ofDrawRectangle(boundingRect.x, boundingRect.y, boundingRect.width, boundingRect.height);
    ofPopStyle();
 }

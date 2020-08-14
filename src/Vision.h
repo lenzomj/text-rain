@@ -10,13 +10,15 @@ class Vision {
       Vision();
       void setup();
       void update();
-      void draw(int width, int height);
+      void draw(int x, int y, int width, int height);
       void exit();
 
       void setDepthThreshold(int near, int far);
       void setDepthThresholdNear(int near);
       void setDepthThresholdFar(int far);
       void learnBackground();
+
+      bool isWithinObject(float x, float y);
 
    private:
       ofxKinect kinect;

@@ -1,22 +1,17 @@
 #pragma once
 
 #include "ofGraphics.h"
-//#include "ofRectangle.h"
-//#include "ofMathConstants.h"
+#include "ofPolyline.h"
 
 class Blob {
 
 public:
 
-   float             area;
-   float             length;
-   ofRectangle       boundingRect;
-   ofDefaultVec3     centroid;
-   bool              hole;
+   Blob(std::vector<ofDefaultVec3> &pts);
 
-   std::vector<ofDefaultVec3> pts;    // the contour of the blob
-   int                        nPts;   // number of pts;
+   void draw();
 
-   Blob();
-   void draw(float x, float y);
+private:
+   ofPolyline contour;
+
 };

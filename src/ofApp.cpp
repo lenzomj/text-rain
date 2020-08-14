@@ -166,7 +166,7 @@ void ofApp::draw(){
     //     box->draw();
     //  }
     //
-    vision.draw(ofGetWidth(), ofGetHeight());
+    vision.draw(0, 0, ofGetWidth(), ofGetHeight());
 
 
    for (int i = 0; i< RAIN_DENSITY; i++) {
