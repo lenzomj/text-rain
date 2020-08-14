@@ -33,20 +33,6 @@ class ofApp : public ofBaseApp{
       //void gotMessage(ofMessage msg);
 
       Vision vision;
-      /*ofxKinect kinect;
-      ofxCvColorImage     colorImage;
-      ofxCvGrayscaleImage grayImage;
-      ofxCvGrayscaleImage grayImageFg;
-      ofxCvGrayscaleImage depthImage;
-      ofxCvGrayscaleImage depthImageBg;
-      ofxCvGrayscaleImage depthImageFg;
-      ofxCvGrayscaleImage depthImageFgNear;
-      ofxCvGrayscaleImage depthImageFgFar;
-      ofxCvContourFinder  contourFinder;
-
-      bool bLearnBackground;
-      int  thresholdNear;
-      int  thresholdFar;*/
 
       ofxPanel     pnlConfig;
       ofxIntSlider barThresholdNear;

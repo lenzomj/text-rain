@@ -23,30 +23,6 @@ void ofApp::setup(){
 
    vision.setup();
 
-   //box2d.init();
-   //box2d.setGravity(0, 10);
-   //box2d.createGround();
-   //box2d.setFPS(30.0);
-
-   /*kinect.setRegistration(true);
-   kinect.init();
-   kinect.open();
-
-   colorImage.allocate(kinect.width, kinect.height);
-   grayImage.allocate(kinect.width, kinect.height);
-   grayImageFg.allocate(kinect.width, kinect.height);
-   depthImage.allocate(kinect.width, kinect.height);
-   depthImageBg.allocate(kinect.width, kinect.height);
-   depthImageFg.allocate(kinect.width, kinect.height);
-   depthImageFgNear.allocate(kinect.width, kinect.height);
-   depthImageFgFar.allocate(kinect.width, kinect.height);
-
-   bLearnBackground = true;
-   thresholdNear = DEFAULT_THRESHOLD_NEAR;
-   thresholdFar = DEFAULT_THRESHOLD_FAR;
-
-   kinect.setCameraTiltAngle(15);*/
-
    for (int i = 0; i < RAIN_DENSITY; i++) {
       ofPoint point = ofPoint(ofRandom(ofGetWidth()), ofRandom(ofGetHeight()));
       rain.push_back(point);
@@ -58,33 +34,7 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::update(){
 
-   //box2d.update();
-
-   /*kinect.update();
-
-   if(kinect.isFrameNew()) {
-
-      colorImage.setFromPixels(kinect.getPixels());
-      depthImage.setFromPixels(kinect.getDepthPixels());
-      grayImage = colorImage;
-
-      if(bLearnBackground) {
-         depthImageBg = depthImage;
-         bLearnBackground = false;
-      }
-
-      depthImageFg.absDiff(depthImageBg, depthImage);
-      ofPixels &pix = depthImageFg.getPixels();
-      int numPixels = pix.size();
-      for(int i = 0; i < numPixels; i++) {
-         if(pix[i] < thresholdNear && pix[i] > thresholdFar) {
-            pix[i] = 255;
-         } else {
-            pix[i] = 0;
-         }
-      }
-
-      contourFinder.findContours(depthImageFg, 50, (kinect.width*kinect.height)/3, 20, false);*/
+   vision.update();
 
       /*for (int i = 0; i< RAIN_DENSITY; i++) {
 
@@ -112,8 +62,6 @@ void ofApp::update(){
          }
       }
    }*/
-   vision.update();
-
    //ofRemove(boxes, ofxBox2dBaseShape::shouldRemoveOffScreen);
 }
 
