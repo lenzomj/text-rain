@@ -3,8 +3,7 @@
 #include "ofMain.h"
 #include "ofxGui.h"
 #include "Vision.h"
-//#include "ofxOpenCv.h"
-//#include "ofxKinect.h"
+#include "Particle.h"
 #include "ofxBox2d.h"
 
 #define CANVAS_WIDTH 1024
@@ -40,11 +39,7 @@ class ofApp : public ofBaseApp{
 
       bool bShowConfig;
 
-      vector<ofPoint> rain;
-      vector<char> text;
-      vector<float> velocities;
-
-//      ofxBox2d box2d;
-//      vector<shared_ptr<ofxBox2dRect>> boxes;
+      vector<Particle> particles;
+      vector<Blob> blobs;
 };
 

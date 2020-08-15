@@ -1,14 +1,12 @@
 #include "ofApp.h"
 
-#define RAIN_DENSITY 100
-//#define DEFAULT_THRESHOLD_NEAR 230
-//#define DEFAULT_THRESHOLD_FAR  50
+#define RAIN_DENSITY 200
 
 //--------------------------------------------------------------
 void ofApp::setup(){
    ofSetLogLevel(OF_LOG_VERBOSE);
    ofSetFrameRate(30);
-   ofBackground(100, 100, 100);
+   ofBackground(28, 28, 28);
 
    pnlConfig.setup();
    barThresholdNear.addListener(this, &ofApp::thresholdNearChanged);
@@ -24,122 +22,62 @@ void ofApp::setup(){
    vision.setup();
 
    for (int i = 0; i < RAIN_DENSITY; i++) {
-      ofPoint point = ofPoint(ofRandom(ofGetWidth()), ofRandom(ofGetHeight()));
-      rain.push_back(point);
-      text.push_back(ofRandom(0, 256));
-      velocities.push_back(ofRandom(1.0,10.0));
+      Particle p(vision.getViewWidth(), vision.getViewHeight());
+      particles.push_back(p);
    }
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
 
-   vision.update();
+   blobs.clear();
 
-      /*for (int i = 0; i< RAIN_DENSITY; i++) {
+   vision.update(blobs);
 
-         int smW = rain[i].x / ofGetWidth() * kinect.width;
-         int smH = rain[i].y / ofGetHeight() * kinect.height;
-         int p = (smW + smH*kinect.width);
-
-         if (depthImageFg.getPixels()[p] < 127) {
-            velocities[i] += 0.3;
-            rain[i].y += velocities[i];
-            if (rain[i].y > ofGetHeight()) {
-                rain[i].y = 0;
-                rain[i].x = ofRandom(ofGetWidth());
-                text[i] = ofRandom(0, 256);
-                velocities[i] = ofRandom(1, 10);
-            }
-         } else {
-            int pAbove = (smW + (smH-velocities[i])*kinect.width);
-            if (depthImageFg.getPixels()[pAbove] > 127) {
-               rain[i].y -= velocities[i];
-               if (rain[i].y < 0) {
-                  rain[i].y = 0;
-               }
-            }
+   for(auto &particle : particles) {
+      particle.update();
+      for(auto &blob : blobs) {
+         if(blob.isPointWithinContour(particle.getLocation())) {
+            glm::vec3 onContour = blob.getNearestPointOnContour(particle.getLocation());
+            particle.setLocation(onContour);
          }
       }
-   }*/
-   //ofRemove(boxes, ofxBox2dBaseShape::shouldRemoveOffScreen);
+   }
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
 
-   ofSetHexColor(0xffffff);
+   float scalex = (float)ofGetWidth()/vision.getViewWidth();
+   float scaley = (float)ofGetHeight()/vision.getViewHeight();
 
-   //depthImageFg.draw(10, 10, ofGetWidth(), ofGetHeight());
+   ofSetHexColor(0x66ff66);
 
+   ofPushMatrix();
+   ofScale(scalex, scaley, 1.0f);
+   //vision.draw();
 
-   //kinect.drawDepth(10, 10, 400, 300);
-   //kinect.draw(420, 10, 400, 300);
-
-   // Top-Left
-	//colorImage.draw (10,  10,  400, 300);
-
-   // Top-Right
-	//depthImage.draw  (420, 10,  400, 300);
-
-   // Bottom-Left
-	//depthImageBg.draw(10 , 320, 400, 300);
-   //depthImageFg.draw(10 , 320, 400, 300);
-
-   // Bottom-Right
-   //contourFinder.draw(420, 320, 400, 300);
-	//depthImageFg.draw(420, 320, 400, 300);
-   /*ofNoFill();
-	ofDrawRectangle(420,320,400,300);
-	int numBlobs = contourFinder.nBlobs;
-	for (int i=0; i<numBlobs; i++){
-		contourFinder.blobs[i].draw(420, 320);
-	}*/
-
-   //grayImage.draw(0, 0, ofGetWidth(), ofGetHeight());
-   //contourFinder.draw(0, 0, ofGetWidth(), ofGetHeight());
-
-   /*ofScale((ofGetWidth() / kinect.width), (ofGetHeight() / kinect.height), 1);
-   ofSetColor(255,0,0); // red
-   for (int i = 0; i < contourFinder.nBlobs; i++){
-      ofxCvBlob& blob = contourFinder.blobs[i];
-      blob.draw(0, 0);
+   for(auto &blob : blobs) {
+      blob.draw();
    }
-   ofSetColor(255,255,255); // reset to white
-   ofScale(1,1,1);*/
 
-    //for(auto &box : boxes) {
-    //     ofFill();
-    //     ofSetHexColor(0xe63b8b);
-    //     box->draw();
-    //  }
-    //
-    vision.draw(0, 0, ofGetWidth(), ofGetHeight());
-
-
-   for (int i = 0; i< RAIN_DENSITY; i++) {
-      //ofNoFill();
-      //ofSetHexColor(0xffffff);
-      //ofDrawCircle(rain[i], 5);
-      //ofSetHexColor(0xff0000);
-      ofSetHexColor(0xffffff);
-      ofDrawBitmapString(text[i], rain[i]);
-    }
+   for(auto &particle : particles) {
+      particle.draw();
+   }
 
 	stringstream reportStream;
    reportStream << "(" << ofGetMouseX() << ", " << ofGetMouseY() << "): " << endl;
    ofDrawBitmapString(reportStream.str(), 10, 10);
 
+   ofPopMatrix();
+
    if(bShowConfig) {
       pnlConfig.draw();
    }
-
 }
 
 void ofApp::exit() {
    vision.exit();
-   //kinect.setCameraTiltAngle(0);
-   //kinect.close();
 }
 
 //--------------------------------------------------------------

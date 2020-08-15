@@ -9,8 +9,8 @@ class Vision {
    public:
       Vision();
       void setup();
-      void update();
-      void draw(int x, int y, int width, int height);
+      void update(std::vector<Blob> &blobs);
+      void draw();
       void exit();
 
       void setDepthThreshold(int near, int far);
@@ -18,14 +18,13 @@ class Vision {
       void setDepthThresholdFar(int far);
       void learnBackground();
 
-      bool isWithinObject(float x, float y);
+      int getViewHeight();
+      int getViewWidth();
 
    private:
       ofxKinect kinect;
       ofImage   source;
       ofImage   background;
-
-      vector<Blob> blobs;
 
       int  thresholdNear;
       int  thresholdFar;
